@@ -1,0 +1,146 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: discourse
+  name: discourse
+  namespace: discourse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discourse
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: discourse
+    spec:
+      containers:
+      - env:
+        - name: DISCOURSE_HOST
+          value: discourse.idevops.io
+        - name: DISCOURSE_DB_HOST
+          value: my-release-postgresql.default
+        - name: DISCOURSE_DB_PORT
+          value: "5432"
+        - name: DISCOURSE_DB_USERNAME
+          value: bn_discourse
+        - name: DISCOURSE_DB_NAME
+          value: bitnami_discourse
+        - name: DISCOURSE_REDIS_HOST
+          value: redis.redis
+        - name: POSTGRESQL_CLIENT_POSTGRES_USER
+          value: postgres
+        - name: POSTGRESQL_CLIENT_POSTGRES_PASSWORD
+          value: u7FvGU3v9r
+        - name: POSTGRESQL_CLIENT_CREATE_DATABASE_NAME
+          value: bitnami_discourse
+        - name: POSTGRESQL_CLIENT_CREATE_DATABASE_EXTENSIONS
+          value: store,pg_trgm
+        - name: DISCOURSE_SMTP_DOMAIN
+          value: smtp.mailgun.com
+        - name: DISCOURSE_SMTP_PORT
+          value: "587"
+        - name: DISCOURSE_SMTP_USER_NAME
+          value: admin@idevops.io
+        - name: DISCOURSE_SMTP_PASSWORD
+          value: GZbv@#2016
+        - name: DISCOURSE_SMTP_PROTOCOL
+          value: tls
+        image: bitnami/discourse
+        livenessProbe:
+          initialDelaySeconds: 90
+          periodSeconds: 90
+          tcpSocket:
+            port: 3000
+        name: discourse
+        ports:
+        - containerPort: 3000
+          name: portone
+        - containerPort: 5432
+          name: porttwo         
+        volumeMounts:
+        - mountPath: /bitnami/discourse
+          name: discourse
+      - command:
+        - /opt/bitnami/scripts/discourse-sidekiq/run.sh
+        env:
+        - name: DISCOURSE_HOST
+          value: discourse.idevops.io
+        - name: DISCOURSE_DB_HOST
+          value: my-release-postgresql.default
+        - name: DISCOURSE_DB_PORT
+          value: "5432"
+        - name: DISCOURSE_DB_USERNAME
+          value: bn_discourse
+        - name: DISCOURSE_DB_NAME
+          value: bitnami_discourse
+        - name: DISCOURSE_REDIS_HOST
+          value: redis.redis
+        - name: POSTGRESQL_CLIENT_POSTGRES_USER
+          value: postgres
+        - name: POSTGRESQL_CLIENT_POSTGRES_PASSWORD
+          value: u7FvGU3v9r
+        - name: POSTGRESQL_CLIENT_CREATE_DATABASE_NAME
+          value: bitnami_discourse
+        - name: POSTGRESQL_CLIENT_CREATE_DATABASE_EXTENSIONS
+          value: store,pg_trgm
+        - name: DISCOURSE_SMTP_DOMAIN
+          value: smtp.mailgun.com
+        - name: DISCOURSE_SMTP_PORT
+          value: "587"
+        - name: DISCOURSE_SMTP_USER_NAME
+          value: admin@idevops.io
+        - name: DISCOURSE_SMTP_PASSWORD
+          value: GZbv@#2016
+        - name: DISCOURSE_SMTP_PROTOCOL
+          value: tls
+        image: docker.io/bitnami/discourse
+        name: sidekiq
+        ports:
+        - containerPort: 3000
+          name: portone
+        - containerPort: 5432
+          name: porttwo
+        volumeMounts:
+        - mountPath: /bitnami/discourse
+          name: discourse
+      volumes:
+      - name: discourse
+        persistentVolumeClaim:
+          claimName: discourse
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: discourse
+  namespace: discourse
+spec:
+  ports:
+  - name: portone
+    port: 3000
+    targetPort: 3000
+  selector:
+    app: discourse
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    app: discourse
+  name: discourse
+  namespace: discourse
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50Gi
+  storageClassName: gp2
